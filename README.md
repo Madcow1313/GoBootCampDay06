@@ -1,4 +1,4 @@
-# Day 06 - Go Piscine
+# Day 06 - Go Intensive
 
 ## Fortress of Solitude
 

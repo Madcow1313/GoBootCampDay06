@@ -1,4 +1,4 @@
-# Day 06 - Go Intensive
+# Day 06 - Go Boot camp
 
 ## Fortress of Solitude
 

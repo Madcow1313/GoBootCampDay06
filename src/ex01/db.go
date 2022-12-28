@@ -13,7 +13,7 @@ func connectToDB() (*sql.DB, error) {
 		return nil, err
 	}
 	sqlStmt := `
-	create table if not exists articles (id integer not null primary key, title text, content text);
+	create table if not exists articles (id serial primary key, title text, content text);
 	`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
@@ -23,7 +23,7 @@ func connectToDB() (*sql.DB, error) {
 }
 
 func dbCreateArticle(article *Article, db *sql.DB) error {
-	query, err := db.Prepare("insert into articles(title,content) values (?,?)")
+	query, err := db.Prepare("insert into articles(title,content) values ($1,$2)")
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func dbCreateArticle(article *Article, db *sql.DB) error {
 	return nil
 }
 
-func dbGetAllArticles(article *Article, db *sql.DB) ([]*Article, error) {
+func dbGetAllArticles(db *sql.DB) ([]*Article, error) {
 	articles := make([]*Article, 0)
 	query, err := db.Prepare("select * from articles")
 	if err != nil {
@@ -62,7 +62,7 @@ func dbGetAllArticles(article *Article, db *sql.DB) ([]*Article, error) {
 }
 
 func dbGetArticle(id string, db *sql.DB) (*Article, error) {
-	query, err := db.Prepare("select * from articles where id = ?")
+	query, err := db.Prepare("select * from articles where id = $1")
 	if err != nil {
 		return nil, err
 	}

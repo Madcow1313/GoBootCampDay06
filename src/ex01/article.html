@@ -1,0 +1,13 @@
+{{define "title"}}{{.Title}}{{end}}
+{{define "scripts"}}{{end}}
+{{define "body"}}
+<h1>{{.Title}} </h1>
+<div>
+  {{.Content}}
+</div>
+<div>
+  <form action="/" method="GET">
+    <button type="submit">Back</button>
+  </form>
+</div>
+{{end}}

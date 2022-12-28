@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -42,6 +43,8 @@ type Article struct {
 // 	})
 // }
 
+var adminLogin, adminPassword, SQLcommand string
+
 func catch(err error) {
 	if err != nil {
 		fmt.Println(err)
@@ -52,14 +55,13 @@ func catch(err error) {
 func getAllArticles(w http.ResponseWriter, r *http.Request) {
 	articles, err := dbGetAllArticles(db)
 	catch(err)
-
-	t, _ := template.ParseFiles("base.html", "index.html")
+	t, _ := template.ParseFiles("templates/base.html", "templates/index.html")
 	err = t.Execute(w, articles)
 	catch(err)
 }
 
 func newArticle(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("base.html", "new.html")
+	t, _ := template.ParseFiles("templates/base.html", "templates/admin.html")
 	err := t.Execute(w, nil)
 	catch(err)
 }
@@ -92,8 +94,32 @@ func articleCtx(next http.Handler) http.Handler {
 
 func getArticle(w http.ResponseWriter, r *http.Request) {
 	article := r.Context().Value("article").(*Article)
-	t, _ := template.ParseFiles("base.html", "article.html")
+	t, _ := template.ParseFiles("templates/base.html", "templates/article.html")
 	err := t.Execute(w, article)
+	catch(err)
+}
+
+func createAdminLogin(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/base.html", "templates/login.html")
+	err := t.Execute(w, nil)
+	catch(err)
+}
+
+func loginAdmin(w http.ResponseWriter, r *http.Request) {
+	login := r.FormValue("adminLogin")
+	password := r.FormValue("adminPassword")
+	fmt.Println(login, password)
+	fmt.Println(login == adminLogin && password == adminPassword)
+	if login == adminLogin && password == adminPassword {
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/forbidden", http.StatusSeeOther)
+	}
+}
+
+func returnToMainPage(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/base.html", "templates/forbidden.html")
+	err := t.Execute(w, nil)
 	catch(err)
 }
 
@@ -102,13 +128,28 @@ func main() {
 	/*used when server panics, recover server and response 500 internal server error to user*/
 	router.Use(middleware.Recoverer)
 	var err error
+	err = readCredentials()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	err = unzipStaticFiles()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	fmt.Println(adminLogin, adminPassword)
 	db, err = connectToDB()
 	catch(err)
-	// http.HandleFunc("/", blogMainPage)
-	// http.ListenAndServe(":8888", nil)
-	//router.Use(ChangeMethod)
 	router.Get("/", getAllArticles)
-	router.Route("/articles", func(r chi.Router) {
+	router.Route("/login", func(r chi.Router) {
+		r.Get("/", createAdminLogin)
+		r.Post("/", loginAdmin)
+	})
+	router.Route("/forbidden", func(r chi.Router) {
+		r.Get("/", returnToMainPage)
+	})
+	router.Route("/admin", func(r chi.Router) {
 		r.Get("/", newArticle)
 		r.Post("/", createArticle)
 		r.Route("/{articleID}", func(r chi.Router) {
@@ -117,7 +158,6 @@ func main() {
 		})
 	})
 
-	err = http.ListenAndServe(":8080", router)
+	err = http.ListenAndServe(":8888", router)
 	catch(err)
-
 }
